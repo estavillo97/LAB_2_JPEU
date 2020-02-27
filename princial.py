@@ -1,7 +1,7 @@
 # -- ------------------------------------------------------------------------------------ -- #
 # -- proyecto: Microestructura y Sistemas de Trading - Laboratorio 2 - Behavioral Finance
 # -- archivo: principal.py - layout general del proyecto
-# -- mantiene: violetarcia
+# -- mantiene: Juan Pablo Estavillo
 # -- repositorio: https://github.com/
 # -- ------------------------------------------------------------------------------------ -- #
 
