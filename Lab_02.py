@@ -40,7 +40,7 @@ def f_estadisticas_ba(param_data):
 def f_estadisticas_av(param_data):
     
 
-
+def estrategia(param_data):
     #inst=inst.lower()
     #pips_inst={'usdjpy':100,
        #     'gbpjpy':100}
