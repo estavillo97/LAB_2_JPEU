@@ -6,3 +6,7 @@ Created on Fri Mar  6 12:53:40 2020
 """
 
 #aqui se agregará todo lo necesario para poder trabajar en el lab 2 de myst
+
+
+def datos(data):
+    return data
