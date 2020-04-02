@@ -186,8 +186,12 @@ def f_leer_archivo(param_archivo):
     """
     archivo=pd.read_excel(param_archivo,skiprows=4)
     archivo=archivo.iloc[:18]
+    
+    #rellenar con ceros
     archivo['Close Time']=archivo['Close Time'].fillna(0)
     
+    #eliminar los balance para mantener solo buy y sell
+    archivo=archivo[archivo.Type != 'balance']
     return archivo
 
 def f_pip_size(param_ins):
@@ -231,7 +235,7 @@ def f_columnas_tiempos(param_data):
     
     Returns
     -------
-    param_data : pd.DataFrame : df con columna agregada 'tiempo'
+    param_data : pd.DataFrame : df con columna agregada 'time'
     
     Debugging
     ---------
@@ -242,20 +246,19 @@ def f_columnas_tiempos(param_data):
     param_data['Close Time'] = pd.to_datetime(param_data['Close Time'])
     param_data['Open Time'] = pd.to_datetime(param_data['Open Time'])
     
-    # time transcurred 
-    #param_data['time']=
+   #create time column
     param_data['time'] = [(param_data.loc[i, 'Close Time'] -
                              param_data.loc[i, 'Open Time']).delta / 1e9
                             for i in range(0, len(param_data['Close Time']))]
 
 
-    # return param_data['time ']
-    return param_data
+    # return param_data['time']
+    return param_data['time']
 
 #%%
 # Nuevas columnas pips para saber el tamaño en pips de las transacciones ejecutadas 
 
-def f_columnas_pips(datos):
+def f_columnas_pips(data):
     """
     Parameters
     ----------
@@ -266,7 +269,7 @@ def f_columnas_pips(datos):
     
     Debugging
     ---------
-    datos =  f_leer_archivo("archivo_tradeview_1.xlsx")
+    datos =  f_leer_archivo("trade3.xlsx")
     
     """
 #    param_data['pips'] = [param_data.loc[i,'closeprice'] * f_pip_size(param_ins=param_data.loc[i,'symbol']) for i in range\
@@ -276,12 +279,12 @@ def f_columnas_pips(datos):
 #                  * f_pip_size(param_ins=param_data.loc[i,'symbol'])]
 #    return param_data['pips']
     
-    datos['pips'] = [(datos.closeprice[i] - datos.openprice[i])*f_pip_size(datos.symbol[i]) for i in range(len(datos))]
-    datos['pips'][datos.type == 'sell'] *= -1
-    datos['pips_acm'] = datos.pips.cumsum()
-    datos['profit_acm'] = datos['profit'].cumsum()
+    data['pips'] = [(data['Close Price'][i] - data['Open Price'][i])*f_pip_size(data.symbol[i]) for i in range(len(data))]
+    data['pips'][data.type == 'sell'] *= -1
+    data['pips_acm'] = data.pips.cumsum()
+    data['profit_acm'] = data['profit'].cumsum()
     
-    return datos.copy()
+    return data.copy()
 
 #%%  Estadísticas básicas
 
