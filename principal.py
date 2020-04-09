@@ -22,17 +22,13 @@ data=fn.f_leer_archivo('trade3.xlsx')
 #agregar columna de tiempo 
 data=fn.f_columnas_tiempos(data)
 
-
 #agregar columna de pip
 data = fn.f_columnas_pips(data)
 
-
-data = fn.f_capital_acm(data)
-
-
-estadisticas = fn.f_basic_stats(data)
+#diccionario con estadísticas de operaciones 
+estadisticas = fn.f_estadisticas_ba(data)
 
 profit_d = fn.f_profit_diario(data)
 desempeno = fn.f_stats_mad(data)
 #%%
-#las conclusiones irán aqui 
+#parte 4
