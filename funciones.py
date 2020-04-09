@@ -10,6 +10,7 @@ Created on Thu Mar 19 12:27:53 2020
 # -- Repositorio: https://github.com/estavillo97/LAB_2_JPEU/funciones.py      --#                                                    -- #
 # -- Autor: Juan Pablo Estavillo Urrea                                                                -- #
 # -- ------------------------------------------------------------------------------------ -- #
+import datetime                                            #para uso de fechas
 from oandapyV20 import API                                 # conexion con broker OANDA
 import numpy as np                                      # funciones numericas
 import pandas as pd                                       # dataframes y utilidades
@@ -318,7 +319,7 @@ def f_estadisticas_ba(datos):
     
     df_2_ranking = (tb1*100).sort_values(by = 'rank', ascending = False).T.transpose()
     
-    return {'df_1_tabla' : df_1_tabla.copy(), 'df_2_ranking' : df_2_ranking.copy()}
+    return {'df_1_tabla' : df_1_tabla, 'df_2_ranking' : df_2_ranking}
 
 #%% Parte 3
 def f_profit_diario(datos):
@@ -336,15 +337,15 @@ def f_profit_diario(datos):
      datos = f_leer_archivo("trade3.xlsx")
      """
      # cantidad de operaciones cerradas ese dia
-     datos['ops'] = [i.date() for i in datos.closetime] 
+     datos['ops'] = [i.date() for i in datos['Close Time']] 
      diario = pd.date_range(datos.ops.min(),datos.ops.max()).date
      # convertir a dataframe las fechas diarias
      fechas = pd.DataFrame({'timestamp' : diario})
      
      groups = datos.groupby('ops')
-     profit = groups['profit'].sum()
+     profit = groups['Profit'].sum()
      # convertir los profits diarios a dataframe
-     profit_diario = pd.DataFrame({'profit_d' : [profit[i] if i in profit.index else 0 for i in diario]})
+     profit_diario = pd.DataFrame({'profit_d' : ['Profit'[i] if i in profit.index else 0 for i in diario]})
      profit_acm = np.cumsum(profit_diario) + 5000
      # juntar en un solo dataframe los dos dataframes anteriores fechas y profits diarios
      f_p1 =pd.merge(fechas, profit_diario, left_index = True, right_index = True)
@@ -354,7 +355,28 @@ def f_profit_diario(datos):
      df_profit_diario = df_profit_diario1.rename(columns = {"profit_d_x" : "profit_d", "profit_d_y" : "profit_acm_d"})
      
      return df_profit_diario
-  
+def f2_profit_diario(datos):
+     #dia inicial
+     inicio=datos['Open Time'].min()
+     #dia ultimo
+     final=datos['Close Time'].max()
+     #fechas para que se conviertan en indice 
+     fechas=[]
+     #añadir todas las fechas 
+     fechas.append(inicio)
+     i=inicio
+     #ciclo para obtener todos los dias 
+     while i<final:
+         i=i+datetime.timedelta(days=1)
+         #quitar sábados 
+         if datetime.date.weekday(i)!=5:
+             fechas.append(i)
+     
+     
+     df=pd.DataFrame(columns=['profit_d','pofit_acm_d'],index=fechas)
+          
+     return df
+     
 
 #%%
 # Terminar el profit acumulado diario antes de terminar stats mad
