@@ -16,7 +16,7 @@ import numpy as np                                      # funciones numericas
 import pandas as pd                                       # dataframes y utilidades
 from datetime import timedelta                            # diferencia entre datos tipo tiempo          
 import oandapyV20.endpoints.instruments as instruments    # informacion de precios historicos
-
+import pandas_datareader.data as web
 # -- --------------------------------------------------------- FUNCION: Descargar precios -- #
 # -- Descargar precios historicos con OANDA
 # añadi estas librerias de Francisco por si se llegaran a ocupar
@@ -336,108 +336,177 @@ def f_profit_diario(datos):
      ---------
      datos = f_leer_archivo("trade3.xlsx")
      """
+     #use 2 tipos de fechas para formar el dataframe 
+     fechas = pd.DataFrame({ 'timestamp' :   (pd.date_range(datos['Close Time'].min(), datos['Close Time'].max(), normalize = True))})
      # cantidad de operaciones cerradas ese dia
-     datos['ops'] = [i.date() for i in datos['Close Time']] 
-     diario = pd.date_range(datos.ops.min(),datos.ops.max()).date
+     datos['operations'] = [i.date() for i in datos['Close Time']] 
+     #variable que usa todas las fechas usadas para hacer trading 
+     diario = pd.date_range(datos.operations.min(),datos.operations.max()).date
      # convertir a dataframe las fechas diarias
-     fechas = pd.DataFrame({'timestamp' : diario})
-     
-     groups = datos.groupby('ops')
+     fechas2 = pd.DataFrame({'timestamp' : diario})
+     #agrupar las operaciones 
+     groups = datos.groupby('operations')
+     #sumar los profits 
      profit = groups['Profit'].sum()
      # convertir los profits diarios a dataframe
-     profit_diario = pd.DataFrame({'profit_d' : ['Profit'[i] if i in profit.index else 0 for i in diario]})
-     profit_acm = np.cumsum(profit_diario) + 5000
+     prd = pd.DataFrame({'profit_d' : [profit[i] if i in profit.index else 0 for i in diario]})
+     profit_acm = np.cumsum(prd) + 5000
      # juntar en un solo dataframe los dos dataframes anteriores fechas y profits diarios
-     f_p1 =pd.merge(fechas, profit_diario, left_index = True, right_index = True)
+     merge1 =pd.merge(fechas, prd, left_index = True, right_index = True)
      # juntar el dataframe anterior de los dos df con los profits acumulados
-     df_profit_diario1 = pd.merge(f_p1, profit_acm, left_index = True, right_index = True)
+     df_profit_diario1 = pd.merge(merge1, profit_acm, left_index = True, right_index = True)
      # renombrar las columnas del nuevo dataframe
      df_profit_diario = df_profit_diario1.rename(columns = {"profit_d_x" : "profit_d", "profit_d_y" : "profit_acm_d"})
-     
-     return df_profit_diario
-def f2_profit_diario(datos):
-     #dia inicial
-     inicio=datos['Open Time'].min()
-     #dia ultimo
-     final=datos['Close Time'].max()
-     #que dia se hizo la operacion
-     datos['date'] = [i.date() for i in datos['Close Time']] 
-     #diario = pd.date_range(datos.ops.min(),datos.ops.max()).date
-     # convertir a dataframe las fechas diarias
-     
-     
-     #groups = datos.groupby('ops')
-     #fechas para que se conviertan en indice 
-     fechas=[]
-     profit_diario=[]
-     #añadir todas las fechas 
-     fechas.append(inicio)
-     i=inicio
-     #ciclo para obtener todos los dias 
-     while i<final:
-         
-         i=i+datetime.timedelta(days=1)
-         #quitar sábados 
-         if datetime.date.weekday(i)!=5:
-             fechas.append(i.date)
-               
-
-     
-     df=pd.DataFrame(columns=['profit_d','pofit_acm_d'],index=fechas)
-     #usarlo como lista para meter el profit usando el date  
-     dates=datos['date'].tolist
-     #usar listas para meter el profit 
-     pr=datos['Profit'].tolist
-
-                 
-                          
+     #combinamos data frames
+     df=pd.merge(df_profit_diario,fechas2,left_index=True,right_index=True)
+     #eliminamos los sabados 
+     df = df[df.timestamp_x.dt.weekday != 5]
+     #usamos la columna de timestamp como index
+     df=df.set_index('timestamp_y')
+     #borramos el timestamp que ya no vamos a usar 
+     df=df.drop('timestamp_x',axis=1)
      return df
+
      
 
 #%%
-# Terminar el profit acumulado diario antes de terminar stats mad
-def f_estadisticas_mad(datos):
+def f_stats_mad(datos):
     """
     Parameters
     ----------
-    datos : DataFrame con transacciones actualizadas
+    datos : pandas.DataFrame : dataframe de datos después de ser usado en las funciones de parte 2
     
     Returns
     -------
-    datos : pandas.DataFrame : dataframe con rendimientos logarítmicos. Tomando en cuenta que se inicializa con una cuenta de $5,000
+    datos : pandas.DataFrame : rendimientos logarítmicos. 
+            Se va a utilizar como referencia una cuenta con 5000 USD
     Debugging
     ---------
-    datos = 'f_leer_archivo("archivo_tradeview_1.csv")
+    datos = 'f_leer_archivo("trade3.xlsx")
     
     """
-    rend_log = np.log(datos.capital_acm[1:].values/datos.capital_acm[:-1].values)
-    # benchmark = 
-    # rend_log_bench = np.log(datos_benchmark...)
-    # tracking_error = rend_log - rend_log_bench
+    profit_d = f_profit_diario(datos)
     
-    # https://towardsdatascience.com/python-for-finance-stock-portfolio-analyses-6da4c3e61054
-    # https://www.investopedia.com/terms/i/informationratio.asp    
-    rf = 0.08
+    # Sharpe ratio
+    rend_log = np.log(profit_d.profit_acm_d[1:].values/profit_d.profit_acm_d[:-1].values)
+    rf = 0.08/300
+    mar = 0.3/300
     
-    #%%
-    #TIP DEL PROFE
-    #df_data.groupby('fechas_dias')['profit'].sum()
-    #%%
-    # Cambiar a semanal los datos
-    # Agregar un benchmark SP500
-    MAD = pd.DataFrame({
-        'sharpe': (rend_log.mean()*30 - rf) / rend_log.std()*(30**0.5),
-        'sortino_b': (rend_log.mean()*30 - rf) / rend_log[rend_log >= 0].std()*(30**0.5),
-        'sortino_s': (rend_log.mean()*30 - rf) / rend_log[rend_log < 0].std()*(30**0.5),
-        # Que de donde se inicia, no hayan valores mayores al punto de inicio y sea solo tendencia bajista
-        # 'drawdown_cap': 
-        # Que de donde se inicia, no hayan valores menores al punto de inicio y que sea solo tendencia alcista
-        # 'drawup_cap': 
-        #'drawdown_pips': datos.pips_acm...,
-        #'drawup_pips': datos.pips_acm.. #,
-        # 'information_ratio': (rend_log.mean()*7 - rend_log_bench.mean()*7) / tracking_error.std()*7**0.5
-        }, index = ['Valor']).transpose()
+        
+    # Sortino compra
+    # Numerador
+    s_buy = (f_profit_diario(datos[datos['type'] == 'buy']))
+    rend_log_b = np.log(s_buy.profit_acm_d[1:].values / s_buy.profit_acm_d[:-1].values)
+    # Denominador
+    tdd_sb = rend_log_b - mar
+    tdd_sb[tdd_sb > 0] = 0
+    # Final
+    sortino_b = (rend_log_b.mean() - mar) / (((tdd_sb*2).mean())*0.5)
+    
 
-    return MAD
+    # Sortino venta
+    # Numerador
+    s_sell = (f_profit_diario(datos[datos['type'] == 'sell']))
+    rend_log_s = np.log(s_sell.profit_acm_d[1:].values / s_sell.profit_acm_d[:-1].values)
+    # Denominador
+    tdd_ss = rend_log_s - mar
+    tdd_ss[tdd_ss > 0] = 0
+    # Final
+    sortino_s = (rend_log_s.mean() - mar) / ((tdd_ss*2).mean())*0.5
+    
+    
+    
+    # DD y DU
+    where_row = profit_d.loc[profit_d['profit_acm_d'] == profit_d.profit_acm_d.min()]
+    where_position = where_row.index.tolist()
+    
+    # Drawdown
+    prev_where = profit_d.loc[0:where_position[0]]
+    where_max_prev = profit_d.loc[profit_d['profit_acm_d'] == prev_where.profit_acm_d.max()]
+    where_min_prev = profit_d.loc[profit_d['profit_acm_d'] == prev_where.profit_acm_d.min()]
+    max_dd = where_max_prev.iloc[0]['profit_acm_d']
+    min_dd = where_min_prev.iloc[0]['profit_acm_d']
+    dd = max_dd - min_dd
+    fecha_i_dd = where_max_prev.iloc[0]['timestamp']
+    fecha_f_dd = where_min_prev.iloc[0]['timestamp']
+    drawdown =  "{}, {}, ${:.2f}" .format(fecha_i_dd, fecha_f_dd, dd)
+     
+    # Drawup
+    foll_where = profit_d.loc[where_position[0]:]
+    where_max_foll = profit_d.loc[profit_d['profit_acm_d'] == foll_where.profit_acm_d.max()]
+    where_min_foll = profit_d.loc[profit_d['profit_acm_d'] == foll_where.profit_acm_d.min()]
+    max_du = where_max_foll.iloc[0]['profit_acm_d']
+    min_du = where_min_foll.iloc[0]['profit_acm_d']
+    du = max_du - min_du
+    fecha_f_du = where_max_foll.iloc[0]['timestamp']
+    fecha_i_du = where_min_foll.iloc[0]['timestamp']
+    drawup =  "{}, {}, ${:.2f}" .format(fecha_i_du, fecha_f_du, du)        
 
-#%%  Parte 4 
+    
+    # Information Ratio
+    benchmark_original = pd.DataFrame(web.YahooDailyReader('^GSPC', profit_d['timestamp'].min(), profit_d['timestamp'].max(), interval='d').read()['Adj Close'])
+    # Ajustar fechas como columna en el dataframe
+    benchmark = benchmark_original.reset_index()
+    # Agregar columna de los rendimientos logarítmicos de los precios de Cierre Ajustado del SP500
+    benchmark['rend_log'] = pd.DataFrame(np.log(benchmark['Adj Close'][1:].values / benchmark['Adj Close'][:-1].values))
+    # Juntar el dataframe de profits con el benchmark en uno solo
+    bench_merge = profit_d.merge(benchmark,  left_on = 'timestamp', right_on = 'Date')
+    # Recorrer los valores de los rendimientos logarítmicos una posición abajo y llenar con 0
+    bench_merge['rend_log'] = bench_merge['rend_log'].shift(1, fill_value = 0)
+    
+    # Cálculo de rendimientos logarítmicos de los profit_acm_d
+    rend_log_profit = pd.DataFrame(np.log(bench_merge.profit_acm_d[1:].values/bench_merge.profit_acm_d[:-1].values))
+    # rend_log_profit = rend_log_profit.shift(1, fill_value = 0)
+    
+    # Agregar la columna de rendimientos de profit_acm_d 
+    bench_merge.insert(3, column = 'rend_log_profit', value = rend_log_profit)
+    # Recorrer una fila hacia abajo los rendimientos en el dataframe
+    bench_merge['rend_log_profit'] = bench_merge['rend_log_profit'].shift(1, fill_value = 0)
+    
+    # Numerador Information Ratio
+    # Promedio de rendimientos del profit_acm_d
+    profit_prom = bench_merge['rend_log_profit'].mean()
+    # Promedio de rendimientos del SP500
+    bench_prom = bench_merge['rend_log'].mean()
+    # Numerador del information ratio = diferencia de los dos anteriores
+    num_ir = profit_prom - bench_prom
+    
+    # Denominador Information Ratio
+    # Diferencia por rows de los rendimientos del profit_acm_d y del SP500
+    dif_denom = bench_merge['rend_log_profit'] - bench_merge['rend_log']
+    # Desviación estándar de la diferencia
+    denom_ir = dif_denom.std()
+    
+    # Cálculo del ratio
+    info_ratio = num_ir/denom_ir
+    
+    
+    # Métricas
+    metrica = pd.DataFrame({'métricas': ['sharpe', 'sortino_b', 'sortino_s', 'drawdown_cap_b', 'drawdown_cap_s', 'information_r']})
+    valor = pd.DataFrame({'valor' : [((rend_log.mean() - rf)/ rend_log.std()), 
+                                     (sortino_b),
+                                     (sortino_s),
+                                     (drawdown),
+                                     (drawup),
+                                     (info_ratio)
+                                     ]})
+    
+    df_mad1 = pd.merge(metrica, valor, left_index = True, right_index = True)
+    descripcion = pd.DataFrame({'descripción': ['Sharpe Ratio', 'Sortino Ratio para Posiciones de Compra', 'Sortino Ratio para Posiciones de Venta', 'DrawDown de Capital', 'DrawUp de Capital', 'Information Ratio']})
+    df_MAD = pd.merge(df_mad1, descripcion, left_index = True, right_index= True)
+    # convert_dict = {'valor': float} 
+    # df_MAD = df_MAD.astype(convert_dict) 
+    
+    return df_MAD
+ ####
+def f2_stats_mad(datos):
+    #necesitamos los datos de profit diario
+    prd=f_profit_diario(datos)
+    #descargamos los precios diarios del benchmark que en este caso es el sp500 diario
+    sp500d = pd.DataFrame(web.YahooDailyReader('^GSPC', prd.index.min(), prd.index.max(), interval='d').read()['Adj Close']).reset_index()
+    #risk free rate 
+    rfr=.08/300
+    #mar rate 
+    mar=.3/300
+    
+    #
