@@ -360,21 +360,37 @@ def f2_profit_diario(datos):
      inicio=datos['Open Time'].min()
      #dia ultimo
      final=datos['Close Time'].max()
+     #que dia se hizo la operacion
+     datos['date'] = [i.date() for i in datos['Close Time']] 
+     #diario = pd.date_range(datos.ops.min(),datos.ops.max()).date
+     # convertir a dataframe las fechas diarias
+     
+     
+     #groups = datos.groupby('ops')
      #fechas para que se conviertan en indice 
      fechas=[]
+     profit_diario=[]
      #añadir todas las fechas 
      fechas.append(inicio)
      i=inicio
      #ciclo para obtener todos los dias 
      while i<final:
+         
          i=i+datetime.timedelta(days=1)
          #quitar sábados 
          if datetime.date.weekday(i)!=5:
-             fechas.append(i)
-     
+             fechas.append(i.date)
+               
+
      
      df=pd.DataFrame(columns=['profit_d','pofit_acm_d'],index=fechas)
-          
+     #usarlo como lista para meter el profit usando el date  
+     dates=datos['date'].tolist
+     #usar listas para meter el profit 
+     pr=datos['Profit'].tolist
+
+                 
+                          
      return df
      
 
