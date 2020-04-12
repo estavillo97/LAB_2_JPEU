@@ -299,15 +299,15 @@ def f_estadisticas_ba(datos):
     datos = f_leer_archivo("trade3.xlsx")
     """
     
-    df_1_tabla = pd.DataFrame({'Ops totales': [len(datos), 'Operaciones totales'],
-                                'Ops ganadoras': [len(datos[datos['Profit'] >= 0]), 'Operaciones ganadoras'],
-                                'Ops ganadoras_b': [len(datos[(datos['Type'] == 'buy') & (datos['Profit'] >= 0)]), 'Operaciones ganadoras en compra'],
-                                'Ops ganadoras_s': [len(datos[(datos['Type'] == 'sell') & (datos['Profit'] >= 0)]), 'Operaciones ganadoras en venta'],
-                                'Ops perdedoras': [len(datos[datos['Profit'] < 0]), 'Operaciones perdedoras'],
-                                'Ops perdedoras_b': [len(datos[(datos['Type'] == 'buy') & (datos['Profit'] < 0)]), 'Operaciones perdedoras en compra'],
-                                'Ops perdedoras_s' : [len(datos[(datos['Type'] == 'sell') & (datos['Profit'] < 0)]), 'Operaciones perdedoras en venta'],
-                                'Profit media': [datos['Profit'].median(), 'Mediana de profit de operaciones'],
-                                'Pips media': [datos['pips'].median(), 'Mediana de pips de operaciones'],
+    df_1_tabla = pd.DataFrame({'operaciones totales ': [len(datos), 'Operaciones totales'],
+                                'operaciones  ganadoras': [len(datos[datos['Profit'] >= 0]), 'Operaciones ganadoras'],
+                                'operaciones  ganadoras_b': [len(datos[(datos['Type'] == 'buy') & (datos['Profit'] >= 0)]), 'Operaciones ganadoras en compra'],
+                                'operaciones ganadoras_s': [len(datos[(datos['Type'] == 'sell') & (datos['Profit'] >= 0)]), 'Operaciones ganadoras en venta'],
+                                'operaciones perdedoras': [len(datos[datos['Profit'] < 0]), 'Operaciones perdedoras'],
+                                'operaciones perdedoras_b': [len(datos[(datos['Type'] == 'buy') & (datos['Profit'] < 0)]), 'Operaciones perdedoras en compra'],
+                                'operaciones perdedoras_s' : [len(datos[(datos['Type'] == 'sell') & (datos['Profit'] < 0)]), 'Operaciones perdedoras en venta'],
+                                'Profit media': [datos['Profit'].median(), 'promedio de profit de operaciones'],
+                                'Pips media': [datos['pips'].median(), 'promedio de pips de operaciones'],
                                 'r_efectividad': [len(datos[datos['Profit'] >= 0])/len(datos), 'Ganadoras Totales/Operaciones Totales'],
                                 'r_proporcion': [len(datos[datos['Profit'] >= 0]) / len(datos[datos['Profit'] < 0]), 'Perdedoras Totales/Ganadoras Totales'],
                                 'r_efectividad_b': [len(datos[(datos['Type'] == 'buy') & (datos['Profit'] >= 0)]) / len(datos), 'Operaciones ganadoras de compra/Operaciones Totales'],
@@ -374,15 +374,14 @@ def f_stats_mad(datos):
     """
     Parameters
     ----------
-    datos : pandas.DataFrame : dataframe de datos después de ser usado en las funciones de parte 2
+    datos : pandas.DataFrame : dataframe con transacciones ejecutadas después de tiempos y pips
     
     Returns
     -------
-    datos : pandas.DataFrame : rendimientos logarítmicos. 
-            Se va a utilizar como referencia una cuenta con 5000 USD
+    datos : pandas.DataFrame : dataframe con rendimientos logarítmicos. Tomando en cuenta que se inicializa con una cuenta de $5,000
     Debugging
     ---------
-    datos = 'f_leer_archivo("trade3.xlsx")
+    datos = 'f_leer_archivo("archivo_tradeview_1.csv")
     
     """
     profit_d = f_profit_diario(datos)
@@ -415,47 +414,54 @@ def f_stats_mad(datos):
     sortino_s = (rend_log_s.mean() - mar) / ((tdd_ss*2).mean())*0.5
     
     
-    
-    # DD y DU
+    # Drawdown
     where_row = profit_d.loc[profit_d['profit_acm_d'] == profit_d.profit_acm_d.min()]
     where_position = where_row.index.tolist()
     
-    # Drawdown
-    prev_where = profit_d.loc[0:where_position[0]]
+    #prev_where = profit_d.loc[0:where_position[0]]
+    prev_where= profit_d
     where_max_prev = profit_d.loc[profit_d['profit_acm_d'] == prev_where.profit_acm_d.max()]
     where_min_prev = profit_d.loc[profit_d['profit_acm_d'] == prev_where.profit_acm_d.min()]
     max_dd = where_max_prev.iloc[0]['profit_acm_d']
     min_dd = where_min_prev.iloc[0]['profit_acm_d']
     dd = max_dd - min_dd
-    fecha_i_dd = where_max_prev.iloc[0]['timestamp']
-    fecha_f_dd = where_min_prev.iloc[0]['timestamp']
+    #fecha_i_dd = where_max_prev.iloc[0]['timestamp']
+    fecha_i_dd=where_max_prev.index[0]
+    #fecha_f_dd = where_min_prev.iloc[0]['timestamp']
+    fecha_f_dd= where_min_prev.index[0]
     drawdown =  "{}, {}, ${:.2f}" .format(fecha_i_dd, fecha_f_dd, dd)
      
     # Drawup
-    foll_where = profit_d.loc[where_position[0]:]
+    where_row_up = profit_d.loc[profit_d['profit_acm_d'] == profit_d.profit_acm_d.max()]
+    where_position_up = where_row_up.index.tolist()
+    
+    foll_where = profit_d
     where_max_foll = profit_d.loc[profit_d['profit_acm_d'] == foll_where.profit_acm_d.max()]
     where_min_foll = profit_d.loc[profit_d['profit_acm_d'] == foll_where.profit_acm_d.min()]
     max_du = where_max_foll.iloc[0]['profit_acm_d']
     min_du = where_min_foll.iloc[0]['profit_acm_d']
     du = max_du - min_du
-    fecha_f_du = where_max_foll.iloc[0]['timestamp']
-    fecha_i_du = where_min_foll.iloc[0]['timestamp']
+    #fecha_f_du = where_max_foll.iloc[0]['timestamp']
+    fecha_f_du=where_max_foll.index[0]
+    #fecha_i_du = where_min_foll.iloc[0]['timestamp']
+    fecha_i_du=where_min_foll.index[0]
     drawup =  "{}, {}, ${:.2f}" .format(fecha_i_du, fecha_f_du, du)        
 
     
     # Information Ratio
-    benchmark_original = pd.DataFrame(web.YahooDailyReader('^GSPC', profit_d['timestamp'].min(), profit_d['timestamp'].max(), interval='d').read()['Adj Close'])
+    benchmark_original = pd.DataFrame(web.YahooDailyReader('^GSPC', datos['operations'].min(), datos['operations'].max(), interval='d').read()['Adj Close'])
     # Ajustar fechas como columna en el dataframe
     benchmark = benchmark_original.reset_index()
     # Agregar columna de los rendimientos logarítmicos de los precios de Cierre Ajustado del SP500
     benchmark['rend_log'] = pd.DataFrame(np.log(benchmark['Adj Close'][1:].values / benchmark['Adj Close'][:-1].values))
     # Juntar el dataframe de profits con el benchmark en uno solo
-    bench_merge = profit_d.merge(benchmark,  left_on = 'timestamp', right_on = 'Date')
+    #bench_merge = profit_d.merge(benchmark,  left_on = 'timestamp', right_on = 'Date')
+    bench_merge = pd.DataFrame(benchmark)
     # Recorrer los valores de los rendimientos logarítmicos una posición abajo y llenar con 0
     bench_merge['rend_log'] = bench_merge['rend_log'].shift(1, fill_value = 0)
     
     # Cálculo de rendimientos logarítmicos de los profit_acm_d
-    rend_log_profit = pd.DataFrame(np.log(bench_merge.profit_acm_d[1:].values/bench_merge.profit_acm_d[:-1].values))
+    rend_log_profit = pd.DataFrame(np.log(bench_merge.rend_log[1:].values/bench_merge.rend_log[:-1].values))
     # rend_log_profit = rend_log_profit.shift(1, fill_value = 0)
     
     # Agregar la columna de rendimientos de profit_acm_d 
@@ -498,33 +504,3 @@ def f_stats_mad(datos):
     # df_MAD = df_MAD.astype(convert_dict) 
     
     return df_MAD
- ####
-def f2_stats_mad(datos):
-    #necesitamos los datos de profit diario
-    prd=f_profit_diario(datos)
-    #descargamos los precios diarios del benchmark que en este caso es el sp500 diario
-    sp500d = pd.DataFrame(web.YahooDailyReader('^GSPC', prd.index.min(), prd.index.max(), interval='d').read()['Adj Close']).reset_index()
-    #risk free rate 
-    rfr=.08/300
-    #mar rate 
-    mar=.3/300
-    
-    s_buy = (f_profit_diario(datos[datos['Type'] == 'buy']))
-    rend_log_b = np.log(s_buy.profit_acm_d[1:].values / s_buy.profit_acm_d[:-1].values)
-    # Denominador
-    tdd_sb = rend_log_b - mar
-    tdd_sb[tdd_sb > 0] = 0
-    # Final
-    sortino_b = (rend_log_b.mean() - mar) / (((tdd_sb*2).mean())*0.5)
-    
-
-    # Sortino venta
-    # Numerador
-    s_sell = (f_profit_diario(datos[datos['Type'] == 'sell']))
-    rend_log_s = np.log(s_sell.profit_acm_d[1:].values / s_sell.profit_acm_d[:-1].values)
-    # Denominador
-    tdd_ss = rend_log_s - mar
-    tdd_ss[tdd_ss > 0] = 0
-    # Final
-    sortino_s = (rend_log_s.mean() - mar) / ((tdd_ss*2).mean())*0.5
-    return 0
