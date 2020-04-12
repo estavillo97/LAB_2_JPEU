@@ -199,7 +199,7 @@ def f_pip_size(param_ins):
     
     Returns
     -------
-    pip_inst : func :number of pipss of the currency. 
+    pip_inst : func :number of pips of the currency. 
     
     Debugging
     ---------
@@ -395,7 +395,7 @@ def f_stats_mad(datos):
         
     # Sortino compra
     # Numerador
-    s_buy = (f_profit_diario(datos[datos['type'] == 'buy']))
+    s_buy = (f_profit_diario(datos[datos['Type'] == 'buy']))
     rend_log_b = np.log(s_buy.profit_acm_d[1:].values / s_buy.profit_acm_d[:-1].values)
     # Denominador
     tdd_sb = rend_log_b - mar
@@ -406,7 +406,7 @@ def f_stats_mad(datos):
 
     # Sortino venta
     # Numerador
-    s_sell = (f_profit_diario(datos[datos['type'] == 'sell']))
+    s_sell = (f_profit_diario(datos[datos['Type'] == 'sell']))
     rend_log_s = np.log(s_sell.profit_acm_d[1:].values / s_sell.profit_acm_d[:-1].values)
     # Denominador
     tdd_ss = rend_log_s - mar
@@ -509,4 +509,22 @@ def f2_stats_mad(datos):
     #mar rate 
     mar=.3/300
     
-    #
+    s_buy = (f_profit_diario(datos[datos['Type'] == 'buy']))
+    rend_log_b = np.log(s_buy.profit_acm_d[1:].values / s_buy.profit_acm_d[:-1].values)
+    # Denominador
+    tdd_sb = rend_log_b - mar
+    tdd_sb[tdd_sb > 0] = 0
+    # Final
+    sortino_b = (rend_log_b.mean() - mar) / (((tdd_sb*2).mean())*0.5)
+    
+
+    # Sortino venta
+    # Numerador
+    s_sell = (f_profit_diario(datos[datos['Type'] == 'sell']))
+    rend_log_s = np.log(s_sell.profit_acm_d[1:].values / s_sell.profit_acm_d[:-1].values)
+    # Denominador
+    tdd_ss = rend_log_s - mar
+    tdd_ss[tdd_ss > 0] = 0
+    # Final
+    sortino_s = (rend_log_s.mean() - mar) / ((tdd_ss*2).mean())*0.5
+    return 0
